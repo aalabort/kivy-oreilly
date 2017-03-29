@@ -7,17 +7,35 @@ from kivy.factory import Factory
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 
+def locations_args_converter(self, index, data_item):
+    city, country = data_item
+    return {'location': (city, country)}
+
+
+
 
 class WeatherRoot(BoxLayout):
     current_weather = ObjectProperty()
+    locations = ObjectProperty()
+
+    def show_locations(self):
+        self.clear_widgets()
+        self.add_widget(self.locations)
+
     def show_current_weather(self, location):
         self.clear_widgets()
 
-        if location is None and self.current_weather is None:
-            location = ('New York','US')
+        if self.current_weather is None:
+            self.current_weather = CurrentWeather()
+        if self.location is None:
+            self.location = Factory.Locations()
+
         if location is not None:
-            self.current_weather=CurrentWeather()
             self.current_weather.location = location
+            if location not in self.locations.locations_list.adapter.data:
+                self.locations.locations_list.adapter.data.append(location)
+                self.locations.location_list._trigger_reset_populate()
+
         self.current_weather.update_weather()
         self.add_widget(self.current_weather)
 
@@ -36,6 +54,7 @@ class CurrentWeather(BoxLayout):
     temp = NumericProperty()
     temp_min = NumericProperty()
     temp_max = NumericProperty()
+    conditions_image = StringProperty()
 
     def update_weather(self):
         print '1'
@@ -49,6 +68,8 @@ class CurrentWeather(BoxLayout):
         self.temp = data['main']['temp']
         self.temp_min = data['main']['temp_min']
         self.temp_max = data['main']['temp_max']
+        self.conditions_image = "http://openweathermap.org/img/w/{}.png".format(
+data['weather'][0]['icon'])
 
 
 
@@ -83,9 +104,6 @@ class AddLocationForm(BoxLayout):
         self.search_results.adapter.data.extend(cities)
         self.search_results._trigger_reset_populate()
 
-    def args_converter(self, index, data_item):
-        city, country = data_item
-        return {'location': (city, country)}
 
 class LocationButton(ListItemButton):
     location = ListProperty()

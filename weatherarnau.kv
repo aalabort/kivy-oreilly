@@ -36,7 +36,7 @@ WeatherRoot:
         #size_hint_y:2
         id: search_results_list
         adapter:
-            ListAdapter(data=[], cls=main.LocationButton, args_converter = root.args_converter)
+            ListAdapter(data=[], cls=main.LocationButton, args_converter = main.locations_args_converter)
             #ListAdapter(data=[], cls=ListItemButton, args_converter = root.args_converter)
 
     Button:
@@ -59,8 +59,13 @@ WeatherRoot:
         Label:
             text: "{}".format(root.temp)
             font_size: "30dp"
-    Label:
-        text: root.conditions
+    BoxLayout:
+        orientation: 'horizontal'
+        Label:
+            text: root.conditions
+        AsyncImage:
+            source: root.conditions_image
+
     BoxLayout:
         orientation: "horizontal"
         Label:
@@ -76,3 +81,18 @@ WeatherRoot:
             on_press: app.root.show_add_location_form()
         Button:
             text: "Forecast"
+
+<Locations@BoxLayout>:
+    orientation: 'vertical'
+    locations_list: locations_list
+    ListView:
+        id: locations_list
+        adapter:
+            ListAdapter(data=[], cls= main.LocationButton, args_converter=main.locations_args_converter)
+    BoxLayout:
+        orientation: 'horizontal'
+        size_hint_y: None
+        height: '40dp'
+        Button:
+            text: 'Add Location'
+            on_press: app.root.show_add_location_form()
