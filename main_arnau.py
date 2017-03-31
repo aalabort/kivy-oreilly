@@ -38,7 +38,6 @@ class WeatherarnauApp(App):
 class CurrentWeather(BoxLayout):
     location = ListProperty(['New York', 'US'])
     conditions = ObjectProperty()
-    conditions_image = StringProperty()
     temp = NumericProperty()
     temp_min = NumericProperty()
     temp_max = NumericProperty()
@@ -52,34 +51,29 @@ class CurrentWeather(BoxLayout):
     def weather_retrieved(self, request, data):
         data = json.loads(data.decode()) if not isinstance(data,dict) else data
         self.render_conditions(data['weather'][0]['description'])
-        self.conditions_image = 'http://openweathermap.org/img/w/{}.png'.format(data['weather'][0]['icon'])
         self.temp = data['main']['temp']
         self.temp_min = data['main']['temp_min']
         self.temp_max = data['main']['temp_max']
 
     def render_conditions(self,conditions_description):
-        # if 'few clouds' in conditions_description.lower():
-        #     conditions_widget = Factory.ClearConditions()
-        # if 'snow' in conditions_description.lower():
-        #     conditions_widget = SnowConditions()
-        # elif 'clear' in conditions_description.lower():
-        #     conditions_widget = SnowConditions()
-        # else:
-        #     conditions_widget = Factory.UnknownConditions()
+        if 'few clouds' in conditions_description.lower():
+            conditions_widget = Factory.ClearConditions()
+        elif 'snow' in conditions_description.lower():
+            conditions_widget = SnowConditions()
+        elif 'clear' in conditions_description.lower():
+            conditions_widget = SnowConditions()
+        else:
+            conditions_widget = Factory.UnknownConditions()
 
-        # conditions_widget = Conditions()
-        # conditions_widget.conditions = conditions_description
-        self.conditions = conditions_description
-        self.conditions_image = self.conditions_image
-        # self.conditions.clear_widgets()
-        # self.conditions.add_widget(conditions_widget)
+        conditions_widget.conditions = conditions_description
+        self.conditions.clear_widgets()
+        self.conditions.add_widget(conditions_widget)
 
 
 
 
 class Conditions(BoxLayout):
     conditions = StringProperty()
-    conditions_image = StringProperty()
 
 class SnowConditions(Conditions):
     FLAKE_SIZE = 5
