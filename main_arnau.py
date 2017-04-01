@@ -6,17 +6,25 @@ from kivy.network.urlrequest import UrlRequest
 from kivy.factory import Factory
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
+from kivy.storage.jsonstore import JsonStore
 
-def locations_args_converter(self, index, data_item):
+
+def locations_args_converter(index, data_item):
     city, country = data_item
     return {'location': (city, country)}
-
-
 
 
 class WeatherRoot(BoxLayout):
     current_weather = ObjectProperty()
     locations = ObjectProperty()
+
+    def __init__(self, **kwargs):
+        super(WeatherRoot, self).__init__(**kwargs)
+        self.store = JsonStore('weather_store.json')
+
+        if self.store.exists('locations'):
+            current_location = self.store.get('locations')['current_location']
+            self.show_current_weather(current_location)
 
     def show_locations(self):
         self.clear_widgets()
@@ -27,14 +35,18 @@ class WeatherRoot(BoxLayout):
 
         if self.current_weather is None:
             self.current_weather = CurrentWeather()
-        if self.location is None:
-            self.location = Factory.Locations()
+        if self.locations is None:
+            self.locations = Factory.Locations()
+            if (self.store.exists('locations')):
+                locations = self.store.get('locations')['locations']
+                self.locations.locations_list.adapter.data.extend(locations)
 
         if location is not None:
             self.current_weather.location = location
             if location not in self.locations.locations_list.adapter.data:
                 self.locations.locations_list.adapter.data.append(location)
-                self.locations.location_list._trigger_reset_populate()
+                #self.locations.locations_list._trigger_reset_populate()
+                self.store.put('locations', locations= list(self.locations.locations_list.adapter.data), current_location = location)
 
         self.current_weather.update_weather()
         self.add_widget(self.current_weather)
@@ -68,13 +80,7 @@ class CurrentWeather(BoxLayout):
         self.temp = data['main']['temp']
         self.temp_min = data['main']['temp_min']
         self.temp_max = data['main']['temp_max']
-        self.conditions_image = "http://openweathermap.org/img/w/{}.png".format(
-data['weather'][0]['icon'])
-
-
-
-
-
+        self.conditions_image = "http://openweathermap.org/img/w/{}.png".format(data['weather'][0]['icon'])
 
 
 class AddLocationForm(BoxLayout):
