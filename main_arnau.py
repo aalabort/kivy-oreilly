@@ -6,6 +6,12 @@ from kivy.network.urlrequest import UrlRequest
 from kivy.factory import Factory
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
+from kivy.storage.jsonstore import JsonStore
+
+
+def locations_args_converter(index, data_item):
+    city, country = data_item
+    return {'location': (city, country)}
 
 import random
 from kivy.graphics import Color, Ellipse
@@ -15,14 +21,37 @@ from kivy.clock import Clock
 
 class WeatherRoot(BoxLayout):
     current_weather = ObjectProperty()
+    locations = ObjectProperty()
+
+    def __init__(self, **kwargs):
+        super(WeatherRoot, self).__init__(**kwargs)
+        self.store = JsonStore('weather_store.json')
+
+        if self.store.exists('locations'):
+            current_location = self.store.get('locations')['current_location']
+            self.show_current_weather(current_location)
+
+    def show_locations(self):
+        self.clear_widgets()
+        self.add_widget(self.locations)
+
     def show_current_weather(self, location):
         self.clear_widgets()
 
-        if location is None and self.current_weather is None:
-            location = ('New York','US')
+        if self.current_weather is None:
+            self.current_weather = CurrentWeather()
+        if self.locations is None:
+            self.locations = Factory.Locations()
+            if (self.store.exists('locations')):
+                locations = self.store.get('locations')['locations']
+                self.locations.locations_list.adapter.data.extend(locations)
+
         if location is not None:
-            self.current_weather=CurrentWeather()
             self.current_weather.location = location
+            self.locations.locations_list.adapter.data.append(location)
+            #self.locations.locations_list._trigger_reset_populate()
+            self.store.put('locations', locations= list(self.locations.locations_list.adapter.data), current_location = location)
+
         self.current_weather.update_weather()
         self.add_widget(self.current_weather)
 
@@ -33,7 +62,21 @@ class WeatherRoot(BoxLayout):
         self.add_widget(location_form)
 
 class WeatherarnauApp(App):
-    pass
+    def build_config(self, config):
+        config.setdefaults('General', {'temp_type': 'Metric'})
+
+    def build_settings(self, settings):
+        settings.add_json_panel("Weather Settings", self.config, data= """[{"type": "options","title": "Temperature System","section": "General","key": "temp_type","options": ["Metric","Imperial"]}
+]"""
+            )
+
+    def on_config_change(self, config, section, key, value):
+        if config is self.config and key == 'temp_type':
+            try:
+                self.root.children[0].update_weather()
+            except AttributeError:
+                pass
+
 
 class CurrentWeather(BoxLayout):
     location = ListProperty(['New York', 'US'])
@@ -41,11 +84,13 @@ class CurrentWeather(BoxLayout):
     temp = NumericProperty()
     temp_min = NumericProperty()
     temp_max = NumericProperty()
+    conditions_image = StringProperty()
 
     def update_weather(self):
-        print '1'
-        weather_template = 'http://api.openweathermap.org/data/2.5/weather?APPID=ef4f6b76310abad083b96a45a6f547be&q={},{}&units=metric'
-        weather_url = weather_template.format(*self.location)
+        config = WeatherarnauApp.get_running_app().config
+        temp_type = config.getdefault('General','temp_type','metric').lower()
+        weather_template = 'http://api.openweathermap.org/data/2.5/weather?APPID=ef4f6b76310abad083b96a45a6f547be&q={},{}&units={}'
+        weather_url = weather_template.format(self.location[0],self.location[1],temp_type)
         request = UrlRequest(weather_url, self.weather_retrieved)
 
     def weather_retrieved(self, request, data):
@@ -55,53 +100,7 @@ class CurrentWeather(BoxLayout):
         self.temp_min = data['main']['temp_min']
         self.temp_max = data['main']['temp_max']
 
-    def render_conditions(self,conditions_description):
-        if 'few clouds' in conditions_description.lower():
-            conditions_widget = Factory.ClearConditions()
-        elif 'snow' in conditions_description.lower():
-            conditions_widget = SnowConditions()
-        elif 'clear' in conditions_description.lower():
-            conditions_widget = SnowConditions()
-        else:
-            conditions_widget = Factory.UnknownConditions()
-
-        conditions_widget.conditions = conditions_description
-        self.conditions.clear_widgets()
-        self.conditions.add_widget(conditions_widget)
-
-
-
-
-class Conditions(BoxLayout):
-    conditions = StringProperty()
-
-class SnowConditions(Conditions):
-    FLAKE_SIZE = 5
-    NUM_FLAKES = 60
-    FLAKE_AREA = FLAKE_SIZE * NUM_FLAKES
-    FLAKE_INTERVAL = 1.0 / 3.0
-
-    def __init__(self, **kwargs):
-        super(SnowConditions, self).__init__(**kwargs)
-        self.flakes = [[x * self.FLAKE_SIZE, 0] for x in range(self.NUM_FLAKES)]
-        Clock.schedule_interval(self.update_flakes, self.FLAKE_INTERVAL)
-        #self.update_flakes(self.FLAKE_INTERVAL)
-
-    def update_flakes(self, time):
-        for f in self.flakes:
-            f[0] += random.choice([-1, 1])
-            f[1] -= random.randint(0, self.FLAKE_SIZE)
-            if f[1] <= 0:
-                f[1] = random.randint(0, int(self.height))
-        self.canvas.before.clear()
-        with self.canvas.before:
-            widget_x = self.center_x - self. FLAKE_AREA / 2
-            widget_y = self.pos[1]
-            for x_flake, y_flake in self.flakes:
-                x = widget_x + x_flake
-                y = widget_y + y_flake
-                Color(0.9, 0.9, 1.0)
-                Ellipse(pos=(x, y), size=(self.FLAKE_SIZE, self.FLAKE_SIZE))
+        self.conditions_image = "http://openweathermap.org/img/w/{}.png".format(data['weather'][0]['icon'])
 
 
 
@@ -132,9 +131,6 @@ class AddLocationForm(BoxLayout):
         self.search_results.adapter.data.extend(cities)
         self.search_results._trigger_reset_populate()
 
-    def args_converter(self, index, data_item):
-        city, country = data_item
-        return {'location': (city, country)}
 
 class LocationButton(ListItemButton):
     location = ListProperty()

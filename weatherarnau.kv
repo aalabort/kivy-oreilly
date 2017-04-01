@@ -36,7 +36,7 @@ WeatherRoot:
         #size_hint_y:2
         id: search_results_list
         adapter:
-            ListAdapter(data=[], cls=main.LocationButton, args_converter = root.args_converter)
+            ListAdapter(data=[], cls=main.LocationButton, args_converter = main.locations_args_converter)
             #ListAdapter(data=[], cls=ListItemButton, args_converter = root.args_converter)
 
     Button:
@@ -61,7 +61,14 @@ WeatherRoot:
             text: "{}".format(root.temp)
             font_size: "30dp"
     BoxLayout:
-        id: conditions
+
+        orientation: 'horizontal'
+        Label:
+            text: root.conditions
+        AsyncImage:
+            source: root.conditions_image
+
+
     BoxLayout:
         orientation: "horizontal"
         Label:
@@ -78,57 +85,24 @@ WeatherRoot:
         Button:
             text: "Forecast"
 
-<Conditions>:
-    orientation: 'horizontal'
-    Label:
-        text: root.conditions
+        Button:
+            text: 'Locations'
+            on_press: app.root.show_locations()
 
-<UnknownConditions@Conditions>:
-    canvas.before:
-        Color:
-            rgb: [0.2, 0.2, 0.2]
-        Ellipse:
-            pos: self.pos
-            size: self.size
-
-<ClearConditions@Conditions>:
-    canvas.before:
-        Color:
-            rgb: [0.8, 0.7, 0.3]
-        Line:
-            cap: "round"
-            width: 3
-            points:
-                [self.center_x - (self.height / 2),
-                self.center_y,
-                self.center_x + (self.height / 2),
-                self.center_y]
-        Line:
-            cap: "round"
-            width: 3
-            points:
-                [self.center_x,
-                self.center_y - (self.height / 2),
-                self.center_x,
-                self.center_y + (self.height / 2)]
-        Line:
-            cap: "round"
-            width: 3
-            points:
-                [self.center_x - (self.height * .35355),
-                self.center_y - (self.height * .35355),
-                self.center_x + (self.height * .35355),
-                self.center_y + (self.height * .35355)]
-        Line:
-            cap: "round"
-            width: 3
-            points:
-                [self.center_x - (self.height * .35355),
-                self.center_y + (self.height * .35355),
-                self.center_x + (self.height * .35355),
-                self.center_y - (self.height * .35355)]
-        Color:
-            rgb: [0.6, 0.5, 0.0]
-        Ellipse:
-            pos: self.center_x - ((self.height - 40) / 2), self.pos[1] + 20
-            size: [self.height - 40, self.height - 40]
+<Locations@BoxLayout>:
+    orientation: 'vertical'
+    locations_list: locations_list
+    ListView:
+        id: locations_list
+        adapter:
+            ListAdapter(data=[], cls= main.LocationButton, args_converter=main.locations_args_converter)
+    BoxLayout:
+        orientation: 'horizontal'
+        size_hint_y: None
+        height: '40dp'
+        Button:
+            text: 'Add Location'
+            on_press: app.root.show_add_location_form()
+    Button
+        text: 'Settings'
+        on_press: app.open_settings()
