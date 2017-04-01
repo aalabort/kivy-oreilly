@@ -57,7 +57,21 @@ class WeatherRoot(BoxLayout):
         self.add_widget(location_form)
 
 class WeatherarnauApp(App):
-    pass
+    def build_config(self, config):
+        config.setdefaults('General', {'temp_type': 'Metric'})
+
+    def build_settings(self, settings):
+        settings.add_json_panel("Weather Settings", self.config, data= """[{"type": "options","title": "Temperature System","section": "General","key": "temp_type","options": ["Metric","Imperial"]}
+]"""
+            )
+
+    def on_config_change(self, config, section, key, value):
+        if config is self.config and key == 'temp_type':
+            try:
+                self.root.children[0].update_weather()
+            except AttributeError:
+                pass
+
 
 class CurrentWeather(BoxLayout):
     location = ListProperty(['New York', 'US'])
@@ -68,9 +82,10 @@ class CurrentWeather(BoxLayout):
     conditions_image = StringProperty()
 
     def update_weather(self):
-        print '1'
-        weather_template = 'http://api.openweathermap.org/data/2.5/weather?APPID=ef4f6b76310abad083b96a45a6f547be&q={},{}&units=metric'
-        weather_url = weather_template.format(*self.location)
+        config = WeatherarnauApp.get_running_app().config
+        temp_type = config.getdefault('General','temp_type','metric').lower()
+        weather_template = 'http://api.openweathermap.org/data/2.5/weather?APPID=ef4f6b76310abad083b96a45a6f547be&q={},{}&units={}'
+        weather_url = weather_template.format(self.location[0],self.location[1],temp_type)
         request = UrlRequest(weather_url, self.weather_retrieved)
 
     def weather_retrieved(self, request, data):
