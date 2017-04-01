@@ -43,10 +43,9 @@ class WeatherRoot(BoxLayout):
 
         if location is not None:
             self.current_weather.location = location
-            if location not in self.locations.locations_list.adapter.data:
-                self.locations.locations_list.adapter.data.append(location)
-                #self.locations.locations_list._trigger_reset_populate()
-                self.store.put('locations', locations= list(self.locations.locations_list.adapter.data), current_location = location)
+            self.locations.locations_list.adapter.data.append(location)
+            #self.locations.locations_list._trigger_reset_populate()
+            self.store.put('locations', locations= list(self.locations.locations_list.adapter.data), current_location = location)
 
         self.current_weather.update_weather()
         self.add_widget(self.current_weather)
