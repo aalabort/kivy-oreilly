@@ -52,7 +52,6 @@ WeatherRoot:
 
 <CurrentWeather>:
     orientation: "vertical"
-    conditions: conditions
     BoxLayout:
         Label:
             text: "{} ({})".format(root.location[0], root.location[1])
@@ -84,6 +83,7 @@ WeatherRoot:
             on_press: app.root.show_add_location_form()
         Button:
             text: "Forecast"
+            on_press: app.root.show_forecast(location= root.location)
 
         Button:
             text: 'Locations'
@@ -106,3 +106,48 @@ WeatherRoot:
     Button
         text: 'Settings'
         on_press: app.open_settings()
+
+<ForecastLabel@BoxLayout>:
+    date: ''
+    conditions_image: ''
+    conditions: ''
+    temp_min: None
+    temp_max: None
+    orientation: 'horizontal'
+    canvas.before:
+        Color:
+            rgb: [0.2,0.2,0.2]
+        Line:
+            points: [self.pos[0], self.pos[1], self.width, self.pos[1]]
+    Label:
+        text: root.date
+    BoxLayout:
+        orientation: 'vertical'
+        AsyncImage:
+            source: root.conditions_image
+        Label:
+            text: root.conditions
+    BoxLayout:
+        orientation: 'vertical'
+        Label:
+            text: 'Low: {}'.format(root.temp_min)
+        Label:
+            text: 'High: {}'.format(root.temp_max)
+
+<Forecast>:
+    orientation: 'vertical'
+    forecast_container: forecast_container
+    Label:
+        size_hint_y: 0.1
+        font_size: '30dp'
+        text: '{} ({})'.format(root.location[0], root.location[1])
+    BoxLayout:
+        orientation: 'vertical'
+        id: forecast_container
+    BoxLayout:
+        orientation: 'horizontal'
+        size_hint_y: None
+        height: '40dp'
+        Button:
+            text: 'Current'
+            on_press: app.root.show_current_weather(root.location)

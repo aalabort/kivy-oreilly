@@ -7,6 +7,7 @@ from kivy.factory import Factory
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from kivy.storage.jsonstore import JsonStore
+from datetime import datetime
 
 
 def locations_args_converter(index, data_item):
@@ -22,6 +23,7 @@ from kivy.clock import Clock
 class WeatherRoot(BoxLayout):
     current_weather = ObjectProperty()
     locations = ObjectProperty()
+    forecast = ObjectProperty()
 
     def __init__(self, **kwargs):
         super(WeatherRoot, self).__init__(**kwargs)
@@ -61,6 +63,18 @@ class WeatherRoot(BoxLayout):
         location_form = AddLocationForm()
         self.add_widget(location_form)
 
+    def show_forecast(self, location = None):
+        self.clear_widgets()
+
+        if self.forecast is None:
+            self.forecast = Forecast()
+
+        if location is not None:
+            self.forecast.location = location
+
+        self.forecast.update_weather()
+        self.add_widget(self.forecast)
+
 class WeatherarnauApp(App):
     def build_config(self, config):
         config.setdefaults('General', {'temp_type': 'Metric'})
@@ -80,7 +94,7 @@ class WeatherarnauApp(App):
 
 class CurrentWeather(BoxLayout):
     location = ListProperty(['New York', 'US'])
-    conditions = ObjectProperty()
+    conditions = StringProperty()
     temp = NumericProperty()
     temp_min = NumericProperty()
     temp_max = NumericProperty()
@@ -95,7 +109,7 @@ class CurrentWeather(BoxLayout):
 
     def weather_retrieved(self, request, data):
         data = json.loads(data.decode()) if not isinstance(data,dict) else data
-        self.render_conditions(data['weather'][0]['description'])
+        self.conditions = (data['weather'][0]['description'])
         self.temp = data['main']['temp']
         self.temp_min = data['main']['temp_min']
         self.temp_max = data['main']['temp_max']
@@ -135,6 +149,31 @@ class AddLocationForm(BoxLayout):
 class LocationButton(ListItemButton):
     location = ListProperty()
     pass
+
+class Forecast(BoxLayout):
+    location = ListProperty(['a','u'])
+    forecast_container = ObjectProperty()
+
+    def update_weather(self):
+        config = WeatherarnauApp.get_running_app().config
+        temp_type = config.getdefault('General','temp_type','metric').lower()
+        weather_template = 'http://api.openweathermap.org/data/2.5/forecast/daily?APPID=ef4f6b76310abad083b96a45a6f547be&q={},{}&units={}&cnt=3'
+        weather_url = weather_template.format(self.location[0],self.location[1],temp_type)
+        request = UrlRequest(weather_url, self.weather_retrieved)
+
+    def weather_retrieved(self, request, data):
+        data = json.loads(data.decode()) if not isinstance(data,dict) else data
+        self.forecast_container.clear_widgets()
+        for day in data['list']:
+            label = Factory.ForecastLabel()
+            label.date = datetime.fromtimestamp(day['dt']).strftime('%a %b %d')
+            label.conditions = day['weather'][0]['description']
+            label.conditions_image = 'http://openweathermap.org/img/w/{}.png'.format(day['weather'][0]['icon'])
+            label.temp_min = day['temp']['min']
+            label.temp_max = day['temp']['max']
+            self.forecast_container.add_widget(label)
+
+
 
 
 
