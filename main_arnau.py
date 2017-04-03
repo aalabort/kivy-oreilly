@@ -8,6 +8,7 @@ from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from kivy.storage.jsonstore import JsonStore
 from datetime import datetime
+from gesture_box import GestureBox
 
 
 def locations_args_converter(index, data_item):
@@ -92,7 +93,7 @@ class WeatherarnauApp(App):
                 pass
 
 
-class CurrentWeather(BoxLayout):
+class CurrentWeather(GestureBox):
     location = ListProperty(['New York', 'US'])
     conditions = StringProperty()
     temp = NumericProperty()
@@ -150,7 +151,7 @@ class LocationButton(ListItemButton):
     location = ListProperty()
     pass
 
-class Forecast(BoxLayout):
+class Forecast(GestureBox):
     location = ListProperty(['a','u'])
     forecast_container = ObjectProperty()
 
